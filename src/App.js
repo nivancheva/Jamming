@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import Card from './Card';
+import Search from './Search';
 
 function App() {
-  const [search, setSearch] = useState("");
   const [results, setResults] =useState([]);
 
   const [playList, setPlayList] = useState([]);
@@ -32,7 +32,7 @@ function App() {
     }
 
     getToken();
-  }, []);
+  }, [clientId, clientSecret]);
 
   function handleAdd(item) {
     if (playList.filter(x => x.id === item.id).length) {
@@ -40,13 +40,14 @@ function App() {
     }
 
     setPlayList([...playList, item]);
+    setResults(results.filter(x => x.id !== item.id))
   }
 
   function handleRemove(item) {
     setPlayList(playList.filter(x => x.id !== item.id));
   }
 
-  async function handleSearch() {
+  async function handleSearch(search) {
     const response = await fetch("https://api.spotify.com/v1/search?q=track%3A" + search + "&type=track", {
         headers: {
           'Authorization': 'Bearer ' + userToken,
@@ -55,21 +56,19 @@ function App() {
 
     const responseJson = await response.json();
 
-    console.log(responseJson);
-    setResults(responseJson.tracks.items);
+    let filteredResults = responseJson.tracks.items.filter(i => {
+      return playList.findIndex(x => x.id === i.id) === -1;
+    })
+    setResults(filteredResults);
+  }
+
+  async function createPlaylist() {  
   }
 
   return (
     <>
-      <input 
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
-      <button
-        className="btn btn-primary"
-        onClick={handleSearch}>
-        Search
-      </button>
+      <Search onClick={handleSearch} />
+
       <div className="grid">
         <div className="result">
           <ul>
@@ -92,7 +91,7 @@ function App() {
               );
             })}
           </ul>
-          <button className='btn btn-light'>Save</button>
+          <button onClick={createPlaylist} className='btn btn-light'>Save</button>
         </div>
       </div>
     </>
